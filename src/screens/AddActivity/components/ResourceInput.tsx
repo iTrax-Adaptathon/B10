@@ -21,14 +21,14 @@ export const ResourceInput: React.FC<ResourceInputProps> = ({ resources, onChang
   };
 
   return (
-    <View>
+    <View style={styles.container}>
       <View style={styles.inputRow}>
         <TextInput
           style={styles.input}
           value={value}
           onChangeText={setValue}
           onSubmitEditing={addResource}
-          placeholder="e.g. Laptop"
+          placeholder="e.g. Laptop, Projector, Gym Gear"
           placeholderTextColor={colors.textMuted}
           returnKeyType="done"
           accessibilityLabel="Required resource"
@@ -61,19 +61,49 @@ export const ResourceInput: React.FC<ResourceInputProps> = ({ resources, onChang
 };
 
 const styles = StyleSheet.create({
-  inputRow: { flexDirection: 'row', gap: spacing.xs },
+  container: {
+    marginVertical: spacing.xs,
+  },
+  inputRow: {
+    flexDirection: 'row',
+    gap: spacing.xs,
+  },
   input: {
-    flex: 1, minHeight: 48, paddingHorizontal: spacing.md, color: colors.textPrimary,
-    fontSize: typography.sizes.md, borderRadius: spacing.borderRadius.md, ...spacing.neu.recessed,
+    flex: 1,
+    minHeight: 48,
+    paddingHorizontal: spacing.md,
+    color: colors.textPrimary,
+    fontSize: typography.sizes.sm,
+    borderRadius: spacing.borderRadius.md,
+    ...spacing.neu.recessed,
   },
   addButton: {
-    width: 48, minHeight: 48, borderRadius: spacing.borderRadius.md,
-    alignItems: 'center', justifyContent: 'center', backgroundColor: colors.primary,
+    width: 48,
+    minHeight: 48,
+    borderRadius: spacing.borderRadius.md,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: colors.primary,
+    ...spacing.neu.glow(colors.primary),
   },
-  chips: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.xs, marginTop: spacing.sm },
+  chips: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: spacing.xs,
+    marginTop: spacing.sm,
+  },
   chip: {
-    flexDirection: 'row', alignItems: 'center', gap: 5, backgroundColor: colors.surfaceInset,
-    borderRadius: spacing.borderRadius.full, paddingHorizontal: spacing.sm, paddingVertical: 7,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    backgroundColor: colors.surfaceInset,
+    borderRadius: spacing.borderRadius.full,
+    paddingHorizontal: spacing.sm + 2,
+    paddingVertical: 6,
   },
-  chipText: { color: colors.textSecondary, fontSize: typography.sizes.sm },
+  chipText: {
+    color: colors.textSecondary,
+    fontSize: typography.sizes.xs,
+    fontWeight: typography.weights.medium,
+  },
 });

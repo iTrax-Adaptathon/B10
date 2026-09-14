@@ -1,262 +1,188 @@
-import React, { useEffect, useRef } from 'react';
-import { Animated, Dimensions, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import React, { useMemo, useRef } from 'react';
+import {
+  Animated,
+  Dimensions,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
+} from 'react-native';
 import { CheckCircle2, Circle, Clock3 } from 'lucide-react-native';
 import { Activity } from '../../../types/activity';
-import { useActivities } from '../../../context/ActivityContext';
+import { formatDuration, formatTime12h, getTodayDateString } from '../../../utils/dateHelpers';
 import { colors } from '../../../theme/colors';
-import { spacing } from '../../../theme/spacing';
 import { typography } from '../../../theme/typography';
-import { formatDuration, formatTime12h } from '../../../utils/dateHelpers';
+import { spacing } from '../../../theme/spacing';
+
+const { width: screenWidth } = Dimensions.get('window');
+const itemWidth = Math.min(220, screenWidth * 0.58);
 
 interface TodayActivitiesCarouselProps {
   activities: Activity[];
-  dateLabel?: string;
+  toggleCompleteActivity: (id: string) => void;
   onGestureStart?: () => void;
   onGestureEnd?: () => void;
 }
 
-const screenWidth = Dimensions.get('window').width;
-const itemWidth = Math.min(270, screenWidth * 0.72);
+const getDailyHighlight = (activities: Activity[]) => {
+  const completed = activities.filter((a) => a.status === 'completed').length;
+  const pending = activities.length - completed;
 
-const getDayDescription = (count: number) => {
-  if (count === 0) {
+  if (activities.length === 0) {
     return {
-      title: 'Chill day',
-      message: 'No work planned today. Enjoy the space to rest or explore something new.',
+      title: 'Free Schedule Ahead',
+      message: 'No activities scheduled for today. Ready for new goals!',
     };
   }
 
-  if (count >= 5) {
+  if (pending === 0) {
     return {
-      title: 'Hectic day',
-      message: 'A packed schedule ahead. Take it one activity at a time.',
-    };
-  }
-
-  if (count >= 3) {
-    return {
-      title: 'Balanced day',
-      message: 'A steady mix of activities. You have room to make good progress.',
+      title: 'All Goals Completed! 🎉',
+      message: 'Outstanding work! You have finished all scheduled activities today.',
     };
   }
 
   return {
-    title: 'Light day',
-    message: 'A few meaningful things to focus on, with plenty of breathing room.',
+    title: `${pending} Task${pending > 1 ? 's' : ''} Remaining`,
+    message: `${completed} of ${activities.length} tasks completed today. Keep the momentum going!`,
   };
 };
 
 export const TodayActivitiesCarousel: React.FC<TodayActivitiesCarouselProps> = ({
   activities,
-  dateLabel = 'Today',
+  toggleCompleteActivity,
   onGestureStart,
   onGestureEnd,
 }) => {
-  const { toggleCompleteActivity } = useActivities();
-  const carouselRef = useRef<ScrollView>(null);
   const scrollX = useRef(new Animated.Value(0)).current;
-  const lineProgress = useRef(new Animated.Value(0)).current;
-  const livePulse = useRef(new Animated.Value(0)).current;
-  const dayDescription = getDayDescription(activities.length);
-  const currentTaskId = activities.find((activity) => activity.status === 'in_progress')?.id
-    || activities.find((activity) => activity.status !== 'completed')?.id;
+  const today = getTodayDateString();
+  const dayDescription = useMemo(() => getDailyHighlight(activities), [activities]);
 
-  const focusLiveTask = () => {
-    const liveIndex = activities.findIndex((activity) => activity.id === currentTaskId);
-    if (liveIndex < 0) return;
-
-    const offset = liveIndex * itemWidth;
-    carouselRef.current?.scrollTo({ x: offset, animated: false });
-    scrollX.setValue(offset);
-  };
-
-  useEffect(() => {
-    const animation = Animated.loop(
-      Animated.sequence([
-        Animated.timing(lineProgress, { toValue: 1, duration: 1500, useNativeDriver: true }),
-        Animated.timing(lineProgress, { toValue: 0, duration: 0, useNativeDriver: true }),
-      ]),
-    );
-    animation.start();
-    return () => animation.stop();
-  }, [lineProgress]);
-
-  useEffect(() => {
-    livePulse.setValue(0);
-    const animation = Animated.loop(
-      Animated.sequence([
-        Animated.timing(livePulse, { toValue: 1, duration: 650, useNativeDriver: true }),
-        Animated.timing(livePulse, { toValue: 0, duration: 650, useNativeDriver: true }),
-      ]),
-    );
-    animation.start();
-    return () => animation.stop();
-  }, [livePulse, currentTaskId]);
+  const currentTaskIndex = useMemo(() => {
+    const pendingIndex = activities.findIndex((a) => a.status !== 'completed');
+    return pendingIndex >= 0 ? pendingIndex : 0;
+  }, [activities]);
 
   return (
-    <>
-      <View style={styles.container}>
-        <View style={styles.header}>
-          <Text style={styles.title}>Today&apos;s activity flow</Text>
-          <View style={styles.headerRight}>
-            <Text style={styles.count}>{activities.length} {activities.length === 1 ? 'activity' : 'activities'}</Text>
-            <TouchableOpacity
-              activeOpacity={0.8}
-              style={styles.currentTaskButton}
-              onPress={focusLiveTask}
-            >
-              <Text style={styles.currentTaskButtonText}>Current task</Text>
-            </TouchableOpacity>
-            <View style={styles.todayBadge}>
-              <Text style={styles.todayBadgeText}>{dateLabel}</Text>
-            </View>
+    <View style={styles.container}>
+      <View style={styles.header}>
+        <View>
+          <Text style={styles.title}>Today's Focus Carousel</Text>
+          <Text style={styles.count}>{activities.length} scheduled today</Text>
+        </View>
+        <View style={styles.headerRight}>
+          <View style={styles.todayBadge}>
+            <Text style={styles.todayBadgeText}>TODAY</Text>
           </View>
         </View>
+      </View>
 
       {activities.length > 0 ? (
         <Animated.ScrollView
-          ref={carouselRef}
           horizontal
           showsHorizontalScrollIndicator={false}
+          contentContainerStyle={styles.row}
           snapToInterval={itemWidth}
           decelerationRate="fast"
-          bounces={false}
           nestedScrollEnabled
           directionalLockEnabled
-          scrollEventThrottle={16}
-          contentContainerStyle={styles.row}
           onTouchStart={onGestureStart}
           onTouchEnd={onGestureEnd}
           onTouchCancel={onGestureEnd}
-          onScroll={Animated.event(
-            [{ nativeEvent: { contentOffset: { x: scrollX } } }],
-            { useNativeDriver: true },
-          )}
+          onScroll={Animated.event([{ nativeEvent: { contentOffset: { x: scrollX } } }], {
+            useNativeDriver: true,
+          })}
+          scrollEventThrottle={16}
         >
           {activities.map((activity, index) => {
             const isCompleted = activity.status === 'completed';
-            const isLive = activity.id === currentTaskId;
-            const opacity = scrollX.interpolate({
-              inputRange: [(index - 1) * itemWidth, index * itemWidth, (index + 1) * itemWidth],
-              outputRange: [0.35, 1, 0.35],
-              extrapolate: 'clamp',
-            });
-            const scale = scrollX.interpolate({
-              inputRange: [(index - 1) * itemWidth, index * itemWidth, (index + 1) * itemWidth],
-              outputRange: [0.9, 1, 0.9],
-              extrapolate: 'clamp',
-            });
+            const isCurrent = index === currentTaskIndex && !isCompleted;
 
             return (
-              <Animated.View key={activity.id} style={[styles.card, { opacity, transform: [{ scale }] }]}>
+              <View key={activity.id} style={styles.card}>
                 <View style={styles.touchable}>
                   <View style={styles.nodeTrack}>
-                    <Animated.View
-                      style={[
-                        styles.bubbleFrame,
-                        isLive && {
-                          transform: [{
-                            scale: livePulse.interpolate({ inputRange: [0, 1], outputRange: [1, 1.1] }),
-                          }],
-                        },
-                      ]}
-                    >
-                      {isLive && (
-                        <Animated.View
-                          style={[
-                            styles.liveRing,
-                            {
-                              opacity: livePulse.interpolate({ inputRange: [0, 1], outputRange: [0.9, 0] }),
-                              transform: [{
-                                scale: livePulse.interpolate({ inputRange: [0, 1], outputRange: [1, 1.45] }),
-                              }],
-                            },
-                          ]}
-                        />
-                      )}
+                    <View style={styles.bubbleFrame}>
+                      {isCurrent && <View style={styles.liveRing} />}
                       <View
                         style={[
                           styles.bubble,
-                          {
-                            backgroundColor: `${activity.tagColor || colors.secondary}20`,
-                            borderColor: activity.tagColor || colors.secondary,
-                          },
                           isCompleted && styles.bubbleCompleted,
+                          { borderColor: activity.tagColor || colors.primary },
                         ]}
                       >
-                        <Text style={[styles.bubbleText, { color: activity.tagColor || colors.secondary }]}>
+                        <Text
+                          style={[
+                            styles.bubbleText,
+                            { color: activity.tagColor || colors.primary },
+                          ]}
+                        >
                           {activity.title.slice(0, 2).toUpperCase()}
                         </Text>
                         <View style={styles.statusIcon}>
                           {isCompleted ? (
-                            <CheckCircle2 size={17} color={colors.success} />
+                            <CheckCircle2 size={18} color={colors.success} />
                           ) : (
-                            <Circle size={17} color={activity.tagColor || colors.secondary} />
+                            <Circle size={18} color={activity.tagColor || colors.primary} />
                           )}
                         </View>
                       </View>
-                    </Animated.View>
-                    {index < activities.length - 1 && (
-                      <View style={styles.connector}>
-                        <Animated.View
-                          style={[
-                            styles.connectorHighlight,
-                            {
-                              transform: [{
-                                translateX: lineProgress.interpolate({
-                                  inputRange: [0, 1],
-                                  outputRange: [-26, itemWidth - 82],
-                                }),
-                              }],
-                            },
-                          ]}
-                        />
-                      </View>
-                    )}
+                    </View>
                   </View>
 
                   <View style={styles.detailsBlock}>
                     <Text
                       style={[styles.cardTitle, isCompleted && styles.completedText]}
                       numberOfLines={2}
-                      ellipsizeMode="tail"
                     >
                       {activity.title}
                     </Text>
                     <View style={styles.detailsRow}>
                       <Clock3 size={13} color={colors.textMuted} />
-                      <Text style={styles.detailText} numberOfLines={1}>{formatTime12h(activity.startTime)}</Text>
+                      <Text style={styles.detailText} numberOfLines={1}>
+                        {formatTime12h(activity.startTime)}
+                      </Text>
                       <Text style={styles.detailDivider}>•</Text>
                       <Text style={styles.detailText} numberOfLines={1}>
                         {formatDuration(activity.startTime, activity.endTime)}
                       </Text>
                     </View>
-                    <Text style={styles.categoryText} numberOfLines={1}>{activity.category}</Text>
+                    <Text style={styles.categoryText} numberOfLines={1}>
+                      {activity.category}
+                    </Text>
                     <TouchableOpacity
                       activeOpacity={0.8}
                       style={[styles.completeButton, isCompleted && styles.completeButtonDone]}
                       onPress={() => toggleCompleteActivity(activity.id)}
                     >
-                      <CheckCircle2 size={13} color={isCompleted ? colors.success : colors.textInverse} />
-                      <Text style={[styles.completeButtonText, isCompleted && styles.completeButtonTextDone]}>
-                        {isCompleted ? 'Completed' : 'Complete'}
+                      <CheckCircle2
+                        size={13}
+                        color={isCompleted ? colors.success : '#FFFFFF'}
+                      />
+                      <Text
+                        style={[
+                          styles.completeButtonText,
+                          isCompleted && styles.completeButtonTextDone,
+                        ]}
+                      >
+                        {isCompleted ? 'Completed' : 'Mark Done'}
                       </Text>
                     </TouchableOpacity>
                   </View>
                 </View>
-              </Animated.View>
+              </View>
             );
           })}
         </Animated.ScrollView>
       ) : (
         <Text style={styles.emptyText}>No activities planned for today.</Text>
       )}
-      </View>
+
       <View style={styles.dayDescription}>
         <Text style={styles.dayDescriptionTitle}>{dayDescription.title}</Text>
         <Text style={styles.dayDescriptionText}>“{dayDescription.message}”</Text>
       </View>
-    </>
+    </View>
   );
 };
 
@@ -276,22 +202,18 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     marginBottom: spacing.md,
   },
-  title: { color: colors.textPrimary, fontSize: typography.sizes.md, fontWeight: typography.weights.bold },
-  count: { color: colors.textMuted, fontSize: typography.sizes.xs },
+  title: {
+    color: colors.textPrimary,
+    fontSize: typography.sizes.md,
+    fontWeight: typography.weights.bold,
+  },
+  count: {
+    color: colors.textMuted,
+    fontSize: typography.sizes.xs,
+  },
   headerRight: {
     alignItems: 'flex-end',
     gap: 5,
-  },
-  currentTaskButton: {
-    paddingHorizontal: spacing.sm,
-    paddingVertical: 4,
-    borderRadius: spacing.borderRadius.full,
-    backgroundColor: colors.successMuted,
-  },
-  currentTaskButtonText: {
-    color: colors.success,
-    fontSize: 10,
-    fontWeight: typography.weights.bold,
   },
   todayBadge: {
     paddingHorizontal: spacing.sm,
@@ -306,7 +228,6 @@ const styles = StyleSheet.create({
   },
   dayDescription: {
     marginTop: spacing.md,
-    marginBottom: spacing.lg,
     paddingHorizontal: spacing.md,
     alignItems: 'center',
   },
@@ -321,22 +242,43 @@ const styles = StyleSheet.create({
     lineHeight: 19,
     marginTop: spacing.xs,
     textAlign: 'center',
-    maxWidth: itemWidth,
+    maxWidth: itemWidth * 1.5,
   },
-  emptyText: { color: colors.textMuted, fontSize: typography.sizes.sm, textAlign: 'center', paddingVertical: spacing.md },
+  emptyText: {
+    color: colors.textMuted,
+    fontSize: typography.sizes.sm,
+    textAlign: 'center',
+    paddingVertical: spacing.md,
+  },
   row: {
     flexDirection: 'row',
     paddingVertical: spacing.xs,
-    paddingHorizontal: Math.max(0, (screenWidth - itemWidth - spacing.md * 2) / 2),
   },
-  card: { width: itemWidth, alignItems: 'center', paddingHorizontal: spacing.xs },
-  touchable: { width: '100%', alignItems: 'center' },
-  detailsBlock: { width: itemWidth - spacing.md, alignItems: 'center', paddingHorizontal: spacing.xs, overflow: 'hidden' },
-  nodeTrack: { width: itemWidth, height: 84, alignItems: 'center', justifyContent: 'center', position: 'relative' },
+  card: {
+    width: itemWidth,
+    alignItems: 'center',
+    paddingHorizontal: spacing.xs,
+  },
+  touchable: {
+    width: '100%',
+    alignItems: 'center',
+  },
+  detailsBlock: {
+    width: itemWidth - spacing.md,
+    alignItems: 'center',
+    paddingHorizontal: spacing.xs,
+  },
+  nodeTrack: {
+    width: itemWidth,
+    height: 84,
+    alignItems: 'center',
+    justifyContent: 'center',
+    position: 'relative',
+  },
   bubble: {
-    width: 82,
-    height: 82,
-    borderRadius: 41,
+    width: 78,
+    height: 78,
+    borderRadius: 39,
     borderWidth: 2,
     alignItems: 'center',
     justifyContent: 'center',
@@ -344,32 +286,34 @@ const styles = StyleSheet.create({
     ...spacing.neu.raisedSm,
   },
   bubbleFrame: {
-    width: 82,
-    height: 82,
+    width: 78,
+    height: 78,
     alignItems: 'center',
     justifyContent: 'center',
   },
   liveRing: {
     position: 'absolute',
-    width: 82,
-    height: 82,
-    borderRadius: 41,
-    borderWidth: 3,
+    width: 86,
+    height: 86,
+    borderRadius: 43,
+    borderWidth: 2.5,
     borderColor: colors.success,
   },
-  bubbleCompleted: { opacity: 0.65 },
-  bubbleText: { fontSize: typography.sizes.lg, fontWeight: typography.weights.extrabold, letterSpacing: 0.5 },
-  statusIcon: { position: 'absolute', right: 1, bottom: 1, backgroundColor: colors.surfaceCard, borderRadius: spacing.borderRadius.full },
-  connector: {
-    position: 'absolute',
-    top: 41,
-    left: itemWidth / 2 + 41,
-    width: itemWidth - 82,
-    height: 2,
-    backgroundColor: colors.border,
-    overflow: 'hidden',
+  bubbleCompleted: {
+    opacity: 0.65,
   },
-  connectorHighlight: { width: 26, height: 2, borderRadius: 2, backgroundColor: colors.primary },
+  bubbleText: {
+    fontSize: typography.sizes.lg,
+    fontWeight: typography.weights.extrabold,
+    letterSpacing: 0.5,
+  },
+  statusIcon: {
+    position: 'absolute',
+    right: 0,
+    bottom: 0,
+    backgroundColor: colors.surfaceElevated,
+    borderRadius: spacing.borderRadius.full,
+  },
   cardTitle: {
     color: colors.textPrimary,
     fontSize: typography.sizes.sm,
@@ -379,23 +323,32 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     width: '100%',
     minHeight: 36,
-    flexShrink: 1,
-    overflow: 'hidden',
   },
-  completedText: { textDecorationLine: 'line-through', color: colors.textMuted },
+  completedText: {
+    textDecorationLine: 'line-through',
+    color: colors.textMuted,
+  },
   detailsRow: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
     gap: 4,
     marginTop: 3,
-    width: '100%',
-    paddingHorizontal: spacing.xs,
-    overflow: 'hidden',
   },
-  detailText: { color: colors.textMuted, fontSize: typography.sizes.xs, flexShrink: 1 },
-  detailDivider: { color: colors.border, fontSize: typography.sizes.xs },
-  categoryText: { color: colors.textMuted, fontSize: 10, marginTop: 2, textTransform: 'capitalize' },
+  detailText: {
+    color: colors.textMuted,
+    fontSize: typography.sizes.xs,
+  },
+  detailDivider: {
+    color: colors.border,
+    fontSize: typography.sizes.xs,
+  },
+  categoryText: {
+    color: colors.textMuted,
+    fontSize: 10,
+    marginTop: 2,
+    textTransform: 'capitalize',
+  },
   completeButton: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -411,7 +364,7 @@ const styles = StyleSheet.create({
     backgroundColor: colors.successMuted,
   },
   completeButtonText: {
-    color: colors.textInverse,
+    color: '#FFFFFF',
     fontSize: 10,
     fontWeight: typography.weights.bold,
   },

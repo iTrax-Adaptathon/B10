@@ -21,18 +21,22 @@ export const DependencySelector: React.FC<DependencySelectorProps> = ({
   const available = activities.filter((activity) => !selectedIds.includes(activity.id));
 
   const toggle = (id: string): void => {
-    onChange(selectedIds.includes(id)
-      ? selectedIds.filter((selectedId) => selectedId !== id)
-      : [...selectedIds, id]);
+    onChange(
+      selectedIds.includes(id)
+        ? selectedIds.filter((selectedId) => selectedId !== id)
+        : [...selectedIds, id]
+    );
   };
 
   return (
-    <View>
+    <View style={styles.container}>
       {selected.length > 0 && (
         <View style={styles.selectedList}>
           {selected.map((activity) => (
             <View key={activity.id} style={styles.selectedChip}>
-              <Text style={styles.selectedText} numberOfLines={1}>{activity.title}</Text>
+              <Text style={styles.selectedText} numberOfLines={1}>
+                {activity.title}
+              </Text>
               <TouchableOpacity
                 onPress={() => toggle(activity.id)}
                 accessibilityRole="button"
@@ -45,7 +49,7 @@ export const DependencySelector: React.FC<DependencySelectorProps> = ({
         </View>
       )}
       {available.length === 0 ? (
-        <Text style={styles.helper}>No other activities available.</Text>
+        <Text style={styles.helper}>No other activities to link.</Text>
       ) : (
         <View style={styles.options}>
           {available.map((activity) => (
@@ -56,7 +60,9 @@ export const DependencySelector: React.FC<DependencySelectorProps> = ({
               accessibilityRole="checkbox"
               accessibilityLabel={`Add ${activity.title} as dependency`}
             >
-              <Text style={styles.optionText} numberOfLines={1}>{activity.title}</Text>
+              <Text style={styles.optionText} numberOfLines={1}>
+                {activity.title}
+              </Text>
               <Text style={styles.optionMeta}>{activity.date}</Text>
             </TouchableOpacity>
           ))}
@@ -67,19 +73,52 @@ export const DependencySelector: React.FC<DependencySelectorProps> = ({
 };
 
 const styles = StyleSheet.create({
-  selectedList: { gap: spacing.xs, marginBottom: spacing.xs },
+  container: {
+    marginVertical: spacing.xs,
+  },
+  selectedList: {
+    gap: spacing.xs,
+    marginBottom: spacing.xs,
+  },
   selectedChip: {
-    flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
-    backgroundColor: colors.primaryMuted, borderRadius: spacing.borderRadius.sm,
-    paddingHorizontal: spacing.sm, paddingVertical: spacing.xs,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    backgroundColor: colors.primaryMuted,
+    borderRadius: spacing.borderRadius.sm,
+    paddingHorizontal: spacing.sm,
+    paddingVertical: spacing.xs,
   },
-  selectedText: { color: colors.primary, fontSize: typography.sizes.sm, flex: 1, marginRight: spacing.xs },
-  options: { gap: spacing.xs },
+  selectedText: {
+    color: colors.primary,
+    fontSize: typography.sizes.sm,
+    fontWeight: typography.weights.semibold,
+    flex: 1,
+    marginRight: spacing.xs,
+  },
+  options: {
+    gap: spacing.xs,
+  },
   option: {
-    minHeight: 44, justifyContent: 'center', paddingHorizontal: spacing.sm,
-    borderRadius: spacing.borderRadius.sm, backgroundColor: colors.surfaceCard, ...spacing.neu.raisedSm,
+    minHeight: 44,
+    justifyContent: 'center',
+    paddingHorizontal: spacing.sm,
+    borderRadius: spacing.borderRadius.sm,
+    backgroundColor: colors.surfaceCard,
+    ...spacing.neu.raisedSm,
   },
-  optionText: { color: colors.textPrimary, fontSize: typography.sizes.sm, fontWeight: typography.weights.semibold },
-  optionMeta: { color: colors.textMuted, fontSize: typography.sizes.xs, marginTop: 2 },
-  helper: { color: colors.textMuted, fontSize: typography.sizes.sm },
+  optionText: {
+    color: colors.textPrimary,
+    fontSize: typography.sizes.sm,
+    fontWeight: typography.weights.semibold,
+  },
+  optionMeta: {
+    color: colors.textMuted,
+    fontSize: typography.sizes.xs,
+    marginTop: 2,
+  },
+  helper: {
+    color: colors.textMuted,
+    fontSize: typography.sizes.xs,
+  },
 });

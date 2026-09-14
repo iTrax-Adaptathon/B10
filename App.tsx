@@ -4,6 +4,7 @@ import { StatusBar } from 'expo-status-bar';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { NavigationContainer, DefaultTheme } from '@react-navigation/native';
 import { ActivityProvider } from './src/context/ActivityContext';
+import { CommitmentProvider } from './src/context/CommitmentContext';
 import { NotificationProvider } from './src/context/NotificationContext';
 import { RootNavigator } from './src/navigation/RootNavigator';
 import { colors } from './src/theme/colors';
@@ -25,12 +26,14 @@ export default function App() {
   return (
     <SafeAreaProvider>
       <ActivityProvider>
-        <NotificationProvider>
-          <NavigationContainer theme={customNavigationTheme}>
-            <StatusBar style="dark" backgroundColor={colors.background} />
-            <RootNavigator />
-          </NavigationContainer>
-        </NotificationProvider>
+        <CommitmentProvider>
+          <NotificationProvider>
+            <NavigationContainer theme={customNavigationTheme}>
+              <StatusBar style="dark" backgroundColor={colors.background} />
+              <RootNavigator />
+            </NavigationContainer>
+          </NotificationProvider>
+        </CommitmentProvider>
       </ActivityProvider>
     </SafeAreaProvider>
   );

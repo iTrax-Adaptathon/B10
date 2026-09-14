@@ -27,12 +27,6 @@ const isValidDate = (date: string): boolean => {
   return !Number.isNaN(parsed.getTime()) && parsed.toISOString().slice(0, 10) === date;
 };
 
-const toDateTime = (date: string, time: string): Date | null => {
-  if (!isValidDate(date) || getMinutes(time) === null) return null;
-  const parsed = new Date(`${date}T${time}:00`);
-  return Number.isNaN(parsed.getTime()) ? null : parsed;
-};
-
 const getActivityType = (activity: Activity): ActivityType => {
   return activity.type || (activity.fixedStartTime || activity.startTime ? 'fixed' : 'flexible');
 };
@@ -61,10 +55,12 @@ export const validateActivity = (
     errors.push({ field: 'date', code: 'INVALID_DATE', message: 'Enter a valid date in YYYY-MM-DD format.' });
   }
 
-  if (!Number.isFinite(activity.duration) || (activity.duration || 0) <= 0) {
+  const duration = typeof activity.duration === 'number' ? activity.duration : (activity.startTime && activity.endTime ? (getMinutes(activity.endTime)! - getMinutes(activity.startTime)!) : 0);
+
+  if (!Number.isFinite(duration) || duration <= 0) {
     errors.push({ field: 'duration', code: 'INVALID_DURATION', message: 'Duration must be greater than zero minutes.' });
   }
-  if (type === 'flexible' && (activity.duration || 0) > 24 * 60) {
+  if (type === 'flexible' && duration > 24 * 60) {
     errors.push({ field: 'duration', code: 'DATE_OVERFLOW', message: 'Activity duration must fit within the selected date.' });
   }
 
@@ -80,9 +76,6 @@ export const validateActivity = (
     }
     if (start !== null && end !== null && start >= end) {
       errors.push({ field: 'fixedEndTime', code: 'INVALID_RANGE', message: 'Start time must be before end time.' });
-    }
-    if (start !== null && end !== null && activity.duration !== end - start) {
-      errors.push({ field: 'duration', code: 'DURATION_MISMATCH', message: 'Duration must match the fixed activity time.' });
     }
 
     if (isValidDate(activity.date) && start !== null && end !== null) {
@@ -101,7 +94,6 @@ export const validateActivity = (
           message: `Time conflict: ${conflict.title} is already scheduled from ${getFixedStart(conflict)} to ${getFixedEnd(conflict)}.`,
         });
       }
-
     }
   }
 

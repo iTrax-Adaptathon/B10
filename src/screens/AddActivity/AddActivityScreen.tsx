@@ -17,29 +17,42 @@ import {
   Clock,
   MapPin,
   PlusCircle,
+  Hourglass,
+  Layers,
+  PackageCheck,
 } from 'lucide-react-native';
 import { useActivities } from '../../context/ActivityContext';
+import { useCommitments } from '../../context/CommitmentContext';
 import { useNotifications } from '../../context/NotificationContext';
-import { ActivityCategory, ActivityFormData, PriorityLevel } from '../../types/activity';
+import { ActivityCategory, ActivityFormData, ActivityType, PriorityLevel } from '../../types/activity';
 import { CategorySelector } from './components/CategorySelector';
 import { PrioritySelector } from './components/PrioritySelector';
 import { TagColorPicker } from './components/TagColorPicker';
+import { ActivityTypeSelector } from './components/ActivityTypeSelector';
+import { DependencySelector } from './components/DependencySelector';
+import { ResourceInput } from './components/ResourceInput';
+import { validateActivity } from '../../utils/activityValidation';
 import { getTodayDateString } from '../../utils/dateHelpers';
 import { colors } from '../../theme/colors';
 import { styles } from './styles';
 
 export const AddActivityScreen: React.FC = () => {
-  const { addActivity } = useActivities();
+  const { activities, addActivity } = useActivities();
+  const { commitments } = useCommitments();
   const { addNotification } = useNotifications();
 
   // Form State
   const [title, setTitle] = useState<string>('');
   const [description, setDescription] = useState<string>('');
+  const [activityType, setActivityType] = useState<ActivityType>('fixed');
   const [category, setCategory] = useState<ActivityCategory>('work');
   const [priority, setPriority] = useState<PriorityLevel>('medium');
   const [date, setDate] = useState<string>(getTodayDateString());
   const [startTime, setStartTime] = useState<string>('09:00');
   const [endTime, setEndTime] = useState<string>('10:00');
+  const [durationMinutes, setDurationMinutes] = useState<string>('60');
+  const [dependencies, setDependencies] = useState<string[]>([]);
+  const [resources, setResources] = useState<string[]>([]);
   const [tagColor, setTagColor] = useState<string>(colors.categories.work);
   const [hasReminder, setHasReminder] = useState<boolean>(true);
   const [location, setLocation] = useState<string>('');
@@ -56,8 +69,37 @@ export const AddActivityScreen: React.FC = () => {
       return;
     }
 
-    if (!startTime || !endTime) {
-      Alert.alert('Missing Time', 'Please set both start and end times.');
+    const calculatedDuration = activityType === 'flexible'
+      ? parseInt(durationMinutes, 10) || 60
+      : undefined;
+
+    // Run constraint and overlap validation against existing activities and commitments
+    const candidateActivity = {
+      id: `temp_${Date.now()}`,
+      title: title.trim(),
+      description: description.trim(),
+      category,
+      priority,
+      status: 'pending' as const,
+      date,
+      startTime: activityType === 'fixed' ? startTime : (startTime || '09:00'),
+      endTime: activityType === 'fixed' ? endTime : (endTime || '10:00'),
+      type: activityType,
+      duration: calculatedDuration,
+      fixedStartTime: activityType === 'fixed' ? startTime : undefined,
+      fixedEndTime: activityType === 'fixed' ? endTime : undefined,
+      dependencies,
+      resources,
+      tagColor,
+      hasReminder,
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+    };
+
+    const validation = validateActivity(candidateActivity, activities, commitments);
+    if (!validation.valid) {
+      const errorMsg = validation.errors.map((err) => `• ${err.message}`).join('\n');
+      Alert.alert('Schedule Conflict / Validation Error', errorMsg);
       return;
     }
 
@@ -70,8 +112,14 @@ export const AddActivityScreen: React.FC = () => {
         category,
         priority,
         date,
-        startTime,
-        endTime,
+        startTime: activityType === 'fixed' ? startTime : (startTime || '09:00'),
+        endTime: activityType === 'fixed' ? endTime : (endTime || '10:00'),
+        type: activityType,
+        duration: calculatedDuration,
+        fixedStartTime: activityType === 'fixed' ? startTime : undefined,
+        fixedEndTime: activityType === 'fixed' ? endTime : undefined,
+        dependencies: dependencies.length > 0 ? dependencies : undefined,
+        resources: resources.length > 0 ? resources : undefined,
         tagColor,
         hasReminder,
         reminderMinutesBefore: hasReminder ? 15 : undefined,
@@ -97,6 +145,9 @@ export const AddActivityScreen: React.FC = () => {
       setLocation('');
       setCategory('work');
       setPriority('medium');
+      setActivityType('fixed');
+      setDependencies([]);
+      setResources([]);
       setTagColor(colors.categories.work);
 
       Alert.alert('Success 🎉', 'Activity scheduled in PlanWise successfully!', [
@@ -155,6 +206,12 @@ export const AddActivityScreen: React.FC = () => {
             />
           </View>
 
+          {/* Activity Scheduling Type (Fixed vs Flexible) */}
+          <View style={styles.formGroup}>
+            <Text style={styles.label}>Scheduling Mode</Text>
+            <ActivityTypeSelector selected={activityType} onSelect={setActivityType} />
+          </View>
+
           {/* Category */}
           <View style={styles.formGroup}>
             <Text style={styles.label}>Category</Text>
@@ -198,35 +255,77 @@ export const AddActivityScreen: React.FC = () => {
             </View>
           </View>
 
-          {/* Time Row */}
-          <View style={styles.row}>
-            <View style={[styles.col, styles.formGroup]}>
-              <Text style={styles.label}>Start Time (24h)</Text>
-              <View style={styles.inputWithIcon}>
-                <Clock size={16} color={colors.textSecondary} />
-                <TextInput
-                  style={styles.inputField}
-                  placeholder="09:00"
-                  placeholderTextColor={colors.textMuted}
-                  value={startTime}
-                  onChangeText={setStartTime}
-                />
+          {/* Time Fields (Fixed Start/End vs Flexible Duration) */}
+          {activityType === 'fixed' ? (
+            <View style={styles.row}>
+              <View style={[styles.col, styles.formGroup]}>
+                <Text style={styles.label}>Start Time (24h)</Text>
+                <View style={styles.inputWithIcon}>
+                  <Clock size={16} color={colors.textSecondary} />
+                  <TextInput
+                    style={styles.inputField}
+                    placeholder="09:00"
+                    placeholderTextColor={colors.textMuted}
+                    value={startTime}
+                    onChangeText={setStartTime}
+                  />
+                </View>
               </View>
-            </View>
 
-            <View style={[styles.col, styles.formGroup]}>
-              <Text style={styles.label}>End Time (24h)</Text>
+              <View style={[styles.col, styles.formGroup]}>
+                <Text style={styles.label}>End Time (24h)</Text>
+                <View style={styles.inputWithIcon}>
+                  <Clock size={16} color={colors.textSecondary} />
+                  <TextInput
+                    style={styles.inputField}
+                    placeholder="10:30"
+                    placeholderTextColor={colors.textMuted}
+                    value={endTime}
+                    onChangeText={setEndTime}
+                  />
+                </View>
+              </View>
+            </View>
+          ) : (
+            <View style={styles.formGroup}>
+              <Text style={styles.label}>Estimated Duration (Minutes)</Text>
               <View style={styles.inputWithIcon}>
-                <Clock size={16} color={colors.textSecondary} />
+                <Hourglass size={16} color={colors.textSecondary} />
                 <TextInput
                   style={styles.inputField}
-                  placeholder="10:30"
+                  placeholder="60"
                   placeholderTextColor={colors.textMuted}
-                  value={endTime}
-                  onChangeText={setEndTime}
+                  keyboardType="numeric"
+                  value={durationMinutes}
+                  onChangeText={setDurationMinutes}
                 />
               </View>
             </View>
+          )}
+
+          {/* Dependencies Selector */}
+          <View style={styles.formGroup}>
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, marginBottom: 4 }}>
+              <Layers size={15} color={colors.primary} />
+              <Text style={styles.label}>Prerequisite Dependencies</Text>
+            </View>
+            <DependencySelector
+              activities={activities}
+              selectedIds={dependencies}
+              onChange={setDependencies}
+            />
+          </View>
+
+          {/* Required Resources Input */}
+          <View style={styles.formGroup}>
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, marginBottom: 4 }}>
+              <PackageCheck size={15} color={colors.secondary} />
+              <Text style={styles.label}>Required Resources & Tools</Text>
+            </View>
+            <ResourceInput
+              resources={resources}
+              onChange={setResources}
+            />
           </View>
 
           {/* Tag Color Customization */}

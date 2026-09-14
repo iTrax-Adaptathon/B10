@@ -11,6 +11,8 @@ export type ActivityCategory =
 
 export type ActivityStatus = 'pending' | 'in_progress' | 'completed' | 'cancelled';
 
+export type ActivityType = 'fixed' | 'flexible';
+
 export interface Activity {
   id: string;
   title: string;
@@ -25,6 +27,17 @@ export interface Activity {
   hasReminder: boolean;
   reminderMinutesBefore?: number;
   location?: string;
+  type?: ActivityType;
+  duration?: number; // In minutes
+  fixedStartTime?: string;
+  fixedEndTime?: string;
+  dependencies?: string[];
+  resources?: string[];
+  preferredStart?: string;
+  preferredEnd?: string;
+  preferredStartTime?: string;
+  preferredEndTime?: string;
+  deadline?: string;
   createdAt: string;
   updatedAt: string;
 }
@@ -45,6 +58,17 @@ export interface ActivityFormData {
   hasReminder: boolean;
   reminderMinutesBefore?: number;
   location?: string;
+  type?: ActivityType;
+  duration?: number;
+  fixedStartTime?: string;
+  fixedEndTime?: string;
+  dependencies?: string[];
+  resources?: string[];
+  preferredStart?: string;
+  preferredEnd?: string;
+  preferredStartTime?: string;
+  preferredEndTime?: string;
+  deadline?: string;
 }
 
 export interface DashboardMetrics {

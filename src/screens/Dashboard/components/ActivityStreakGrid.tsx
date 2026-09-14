@@ -1,10 +1,10 @@
 import React, { useMemo, useState } from 'react';
-import { ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, ScrollView } from 'react-native';
 import { Activity, ActivityCategory } from '../../../types/activity';
-import { colors } from '../../../theme/colors';
-import { spacing } from '../../../theme/spacing';
-import { typography } from '../../../theme/typography';
 import { getTodayDateString } from '../../../utils/dateHelpers';
+import { colors } from '../../../theme/colors';
+import { typography } from '../../../theme/typography';
+import { spacing } from '../../../theme/spacing';
 
 interface ActivityStreakGridProps {
   activities: Activity[];
@@ -29,8 +29,8 @@ const getStreakDays = (activities: Activity[], selectedCategory: ActivityCategor
   const activityCounts = activities
     .filter((activity) => activity.category === selectedCategory)
     .reduce<Record<string, number>>((counts, activity) => {
-    counts[activity.date] = (counts[activity.date] || 0) + 1;
-    return counts;
+      counts[activity.date] = (counts[activity.date] || 0) + 1;
+      return counts;
     }, {});
   const today = new Date();
   const days: StreakDay[] = [];
@@ -62,11 +62,12 @@ export const ActivityStreakGrid: React.FC<ActivityStreakGridProps> = ({
   onGestureStart,
   onGestureEnd,
 }) => {
-  const activityTypes = useMemo(
-    () => Array.from(new Set(activities.map((activity) => activity.category))),
-    [activities],
-  );
-  const [selectedCategory, setSelectedCategory] = useState<ActivityCategory>(activityTypes[0] || 'other');
+  const activityTypes = useMemo(() => {
+    const categories = Array.from(new Set(activities.map((activity) => activity.category)));
+    return categories.length > 0 ? categories : (['work', 'study', 'health'] as ActivityCategory[]);
+  }, [activities]);
+
+  const [selectedCategory, setSelectedCategory] = useState<ActivityCategory>(activityTypes[0] || 'work');
   const selectedActivities = activities.filter((activity) => activity.category === selectedCategory);
   const days = useMemo(() => getStreakDays(activities, selectedCategory), [activities, selectedCategory]);
   const today = getTodayDateString();
@@ -84,7 +85,7 @@ export const ActivityStreakGrid: React.FC<ActivityStreakGridProps> = ({
     <View style={styles.container}>
       <View style={styles.header}>
         <View>
-          <Text style={styles.title}>{selectedCategory[0].toUpperCase() + selectedCategory.slice(1)} streak</Text>
+          <Text style={styles.title}>{selectedCategory[0].toUpperCase() + selectedCategory.slice(1)} Streak</Text>
           <Text style={styles.subtitle}>Your consistency over the last 6 weeks</Text>
         </View>
         <View style={styles.streakBadge}>
@@ -93,7 +94,7 @@ export const ActivityStreakGrid: React.FC<ActivityStreakGridProps> = ({
         </View>
       </View>
 
-      <Text style={styles.selectLabel}>Track an activity type</Text>
+      <Text style={styles.selectLabel}>Track an activity category</Text>
       <ScrollView
         horizontal
         showsHorizontalScrollIndicator={false}
@@ -197,7 +198,7 @@ const styles = StyleSheet.create({
     paddingVertical: 2,
   },
   activityTypeChip: {
-    paddingHorizontal: spacing.sm,
+    paddingHorizontal: spacing.sm + 2,
     paddingVertical: 7,
     borderRadius: spacing.borderRadius.full,
     backgroundColor: colors.surfaceInset,
@@ -212,7 +213,7 @@ const styles = StyleSheet.create({
     textTransform: 'capitalize',
   },
   activityTypeTextActive: {
-    color: colors.textInverse,
+    color: '#FFFFFF',
   },
   streakBadge: {
     alignItems: 'flex-end',
@@ -271,17 +272,17 @@ const styles = StyleSheet.create({
     borderRadius: 3,
   },
   todayCell: {
-    borderWidth: 1,
-    borderColor: colors.textPrimary,
+    borderWidth: 1.5,
+    borderColor: colors.primary,
   },
   levelEmpty: {
     backgroundColor: colors.surfaceInset,
   },
   levelOne: {
-    backgroundColor: '#B7D9C1',
+    backgroundColor: '#A7F3D0',
   },
   levelTwo: {
-    backgroundColor: '#62A97A',
+    backgroundColor: '#34D399',
   },
   levelThree: {
     backgroundColor: colors.success,

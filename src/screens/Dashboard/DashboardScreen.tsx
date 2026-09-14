@@ -6,13 +6,14 @@ import {
   Clock,
   Flame,
   TrendingUp,
-  Sparkles,
 } from 'lucide-react-native';
 import { useActivities } from '../../context/ActivityContext';
 import { MetricCard } from './components/MetricCard';
+import { TodayActivitiesCarousel } from './components/TodayActivitiesCarousel';
 import { TodayScheduleTimeline } from './components/TodayScheduleTimeline';
 import { UpcomingActivitiesList } from './components/UpcomingActivitiesList';
 import { CategoryDistribution } from './components/CategoryDistribution';
+import { ActivityStreakGrid } from './components/ActivityStreakGrid';
 import { getNextSevenDays, getTodayDateString, formatDateDisplay } from '../../utils/dateHelpers';
 import { colors } from '../../theme/colors';
 import { styles } from './styles';
@@ -25,12 +26,17 @@ export const DashboardScreen: React.FC = () => {
   const [refreshing, setRefreshing] = useState<boolean>(false);
 
   const weekDays = getNextSevenDays();
+  const todayStr = getTodayDateString();
 
   const onRefresh = async () => {
     setRefreshing(true);
     await refreshActivities();
     setRefreshing(false);
   };
+
+  const todayActivities = activities
+    .filter((a) => a.date === todayStr)
+    .sort((a, b) => a.startTime.localeCompare(b.startTime));
 
   const selectedDateActivities = activities
     .filter((a) => a.date === selectedDate)
@@ -61,7 +67,7 @@ export const DashboardScreen: React.FC = () => {
               <Text style={styles.titleText}>Overview</Text>
             </View>
             <View style={styles.dateBadge}>
-              <Text style={styles.dateBadgeText}>{formatDateDisplay(getTodayDateString())}</Text>
+              <Text style={styles.dateBadgeText}>{formatDateDisplay(todayStr)}</Text>
             </View>
           </View>
         </View>
@@ -106,6 +112,12 @@ export const DashboardScreen: React.FC = () => {
             />
           </View>
         </View>
+
+        {/* Today's Focus Carousel */}
+        <TodayActivitiesCarousel
+          activities={todayActivities}
+          toggleCompleteActivity={toggleCompleteActivity}
+        />
 
         {/* Schedule Timeline Header with 7-Day Selector */}
         <View style={styles.section}>
@@ -166,6 +178,9 @@ export const DashboardScreen: React.FC = () => {
 
         {/* Category Breakdown */}
         <CategoryDistribution activities={activities} />
+
+        {/* Activity Streak Grid */}
+        <ActivityStreakGrid activities={activities} />
       </ScrollView>
     </SafeAreaView>
   );

@@ -1,9 +1,11 @@
 import React, { useMemo, useState } from 'react';
-import { Alert, ScrollView, Text, TextInput, TouchableOpacity, View } from 'react-native';
+import { Alert, ScrollView, Text, TextInput, TouchableOpacity, View, StyleSheet } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useCommitments } from '../../context/CommitmentContext';
 import { WEEKDAY_LABELS } from '../../types/commitment';
 import { colors } from '../../theme/colors';
+import { typography } from '../../theme/typography';
+import { spacing } from '../../theme/spacing';
 
 const makeEmptyDays = (): number[] => [1, 2, 3, 4, 5];
 
@@ -31,17 +33,17 @@ export const AddCommitmentScreen: React.FC = () => {
 
   const handleSave = async () => {
     if (!title.trim()) {
-      Alert.alert('Missing name', 'Please provide a commitment name.');
+      Alert.alert('Missing Name', 'Please provide a commitment name.');
       return;
     }
 
     if (startTime >= endTime) {
-      Alert.alert('Invalid time range', 'End time must be after start time.');
+      Alert.alert('Invalid Time Range', 'End time must be after start time.');
       return;
     }
 
     if (days.length === 0) {
-      Alert.alert('Select days', 'Choose at least one day for this commitment.');
+      Alert.alert('Select Days', 'Choose at least one day for this commitment.');
       return;
     }
 
@@ -52,7 +54,7 @@ export const AddCommitmentScreen: React.FC = () => {
       endTime,
     });
 
-    Alert.alert('Commitment saved', 'Your availability rules have been updated.');
+    Alert.alert('Commitment Saved 🎉', 'Your availability rules have been updated.');
     setTitle('');
     setDays(makeEmptyDays());
     setStartTime('08:30');
@@ -60,94 +62,176 @@ export const AddCommitmentScreen: React.FC = () => {
   };
 
   return (
-    <SafeAreaView style={{ flex: 1, backgroundColor: colors.background }} edges={['bottom']}>
-      <ScrollView contentContainerStyle={{ paddingHorizontal: 16, paddingBottom: 40 }}>
-        <Text style={{ color: colors.textPrimary, fontSize: 30, fontWeight: '800', marginTop: 16 }}>Add Commitment</Text>
-        <Text style={{ color: colors.textSecondary, marginBottom: 20 }}>Create a generic availability block that affects scheduling across the app.</Text>
+    <SafeAreaView style={styles.safeArea} edges={['bottom']}>
+      <ScrollView contentContainerStyle={styles.scrollContent}>
+        <Text style={styles.title}>Add Commitment</Text>
+        <Text style={styles.subtitle}>
+          Create recurring availability blocks (e.g. Work hours, Lectures, Gym) that automatically prevent schedule overlaps.
+        </Text>
 
-        <View style={{ marginBottom: 18 }}>
-          <Text style={{ color: colors.textPrimary, fontWeight: '600', marginBottom: 8 }}>Commitment name</Text>
+        <View style={styles.formGroup}>
+          <Text style={styles.label}>Commitment Name</Text>
           <TextInput
             value={title}
             onChangeText={setTitle}
-            placeholder="School, Office, Workout, Client call..."
+            placeholder="e.g. Core Office Hours, University Lectures"
             placeholderTextColor={colors.textMuted}
-            style={{
-              backgroundColor: '#F8FAFC',
-              borderRadius: 14,
-              paddingHorizontal: 14,
-              paddingVertical: 12,
-              color: colors.textPrimary,
-              borderWidth: 1,
-              borderColor: colors.border,
-            }}
+            style={styles.input}
           />
         </View>
 
-        <View style={{ marginBottom: 18 }}>
-          <Text style={{ color: colors.textPrimary, fontWeight: '600', marginBottom: 8 }}>Days</Text>
-          <Text style={{ color: colors.textMuted, fontSize: 12, marginBottom: 8 }}>{selectedDaysLabel}</Text>
-          <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>
+        <View style={styles.formGroup}>
+          <Text style={styles.label}>Active Days</Text>
+          <Text style={styles.subLabel}>{selectedDaysLabel}</Text>
+          <View style={styles.daysRow}>
             {WEEKDAY_LABELS.map((label, index) => {
               const active = days.includes(index);
               return (
                 <TouchableOpacity
                   key={label}
+                  activeOpacity={0.8}
                   onPress={() => toggleDay(index)}
-                  style={{
-                    width: 42,
-                    height: 42,
-                    borderRadius: 21,
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    backgroundColor: active ? colors.primary : '#F8FAFC',
-                    borderWidth: 1,
-                    borderColor: active ? colors.primary : colors.border,
-                  }}
+                  style={[styles.dayButton, active && styles.dayButtonActive]}
                 >
-                  <Text style={{ color: active ? '#FFFFFF' : colors.textPrimary, fontWeight: '700', fontSize: 12 }}>{label.slice(0, 2)}</Text>
+                  <Text style={[styles.dayText, active && styles.dayTextActive]}>
+                    {label.slice(0, 2)}
+                  </Text>
                 </TouchableOpacity>
               );
             })}
           </View>
         </View>
 
-        <View style={{ marginBottom: 18, flexDirection: 'row', gap: 12 }}>
-          <View style={{ flex: 1 }}>
-            <Text style={{ color: colors.textPrimary, fontWeight: '600', marginBottom: 8 }}>Start time</Text>
+        <View style={[styles.formGroup, styles.timeRow]}>
+          <View style={styles.timeCol}>
+            <Text style={styles.label}>Start Time (24h)</Text>
             <TextInput
               value={startTime}
               onChangeText={setStartTime}
               placeholder="08:30"
+              placeholderTextColor={colors.textMuted}
               keyboardType="numbers-and-punctuation"
-              style={{ backgroundColor: '#F8FAFC', borderRadius: 14, paddingHorizontal: 14, paddingVertical: 12, color: colors.textPrimary, borderWidth: 1, borderColor: colors.border }}
+              style={styles.input}
             />
           </View>
-          <View style={{ flex: 1 }}>
-            <Text style={{ color: colors.textPrimary, fontWeight: '600', marginBottom: 8 }}>End time</Text>
+          <View style={styles.timeCol}>
+            <Text style={styles.label}>End Time (24h)</Text>
             <TextInput
               value={endTime}
               onChangeText={setEndTime}
               placeholder="16:00"
+              placeholderTextColor={colors.textMuted}
               keyboardType="numbers-and-punctuation"
-              style={{ backgroundColor: '#F8FAFC', borderRadius: 14, paddingHorizontal: 14, paddingVertical: 12, color: colors.textPrimary, borderWidth: 1, borderColor: colors.border }}
+              style={styles.input}
             />
           </View>
         </View>
 
-        <TouchableOpacity
-          onPress={handleSave}
-          style={{
-            backgroundColor: colors.primary,
-            borderRadius: 18,
-            paddingVertical: 16,
-            alignItems: 'center',
-            justifyContent: 'center',
-          }}
-        >
-          <Text style={{ color: '#FFFFFF', fontWeight: '800', fontSize: 16 }}>Save Commitment</Text>
+        <TouchableOpacity activeOpacity={0.85} onPress={handleSave} style={styles.saveButton}>
+          <Text style={styles.saveButtonText}>Save Availability Rule</Text>
         </TouchableOpacity>
       </ScrollView>
     </SafeAreaView>
   );
 };
+
+const styles = StyleSheet.create({
+  safeArea: {
+    flex: 1,
+    backgroundColor: colors.background,
+  },
+  scrollContent: {
+    paddingHorizontal: spacing.md,
+    paddingBottom: spacing.xxl * 3,
+  },
+  title: {
+    color: colors.textPrimary,
+    fontSize: typography.sizes.display,
+    fontWeight: typography.weights.extrabold,
+    marginTop: spacing.md,
+    letterSpacing: -0.5,
+  },
+  subtitle: {
+    color: colors.textSecondary,
+    fontSize: typography.sizes.sm,
+    marginTop: 4,
+    marginBottom: spacing.lg,
+    lineHeight: 20,
+  },
+  formGroup: {
+    marginBottom: spacing.lg,
+  },
+  label: {
+    color: colors.textPrimary,
+    fontSize: typography.sizes.sm,
+    fontWeight: typography.weights.semibold,
+    marginBottom: spacing.xs,
+  },
+  subLabel: {
+    color: colors.textMuted,
+    fontSize: typography.sizes.xs,
+    marginBottom: spacing.xs,
+  },
+  input: {
+    borderRadius: spacing.borderRadius.md,
+    paddingHorizontal: spacing.md,
+    paddingVertical: 12,
+    color: colors.textPrimary,
+    fontSize: typography.sizes.md,
+    ...spacing.neu.recessed,
+  },
+  daysRow: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: spacing.xs,
+    marginTop: spacing.xs,
+  },
+  dayButton: {
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: colors.surfaceCard,
+    ...spacing.neu.raisedSm,
+  },
+  dayButtonActive: {
+    backgroundColor: colors.primary,
+    ...spacing.neu.glow(colors.primary),
+  },
+  dayText: {
+    color: colors.textPrimary,
+    fontWeight: typography.weights.bold,
+    fontSize: typography.sizes.xs,
+  },
+  dayTextActive: {
+    color: '#FFFFFF',
+  },
+  timeRow: {
+    flexDirection: 'row',
+    gap: spacing.sm,
+  },
+  timeCol: {
+    flex: 1,
+  },
+  saveButton: {
+    backgroundColor: colors.primary,
+    borderRadius: spacing.borderRadius.xl,
+    paddingVertical: 16,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginTop: spacing.md,
+    borderTopWidth: 1.5,
+    borderLeftWidth: 1.5,
+    borderTopColor: '#FFFFFF',
+    borderLeftColor: '#FFFFFF',
+    borderBottomColor: 'rgba(79, 70, 229, 0.4)',
+    borderRightColor: 'rgba(79, 70, 229, 0.4)',
+    ...spacing.neu.glow(colors.primary),
+  },
+  saveButtonText: {
+    color: '#FFFFFF',
+    fontWeight: typography.weights.extrabold,
+    fontSize: typography.sizes.md,
+  },
+});

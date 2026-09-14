@@ -11,4 +11,5 @@ export type RootStackParamList = {
   MainTabs: NavigatorScreenParams<MainTabParamList>;
   Notifications: undefined;
   ActivityDetail: { activity: Activity };
+  AddCommitment: undefined;
 };

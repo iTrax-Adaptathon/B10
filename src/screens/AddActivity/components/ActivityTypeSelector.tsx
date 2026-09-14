@@ -17,6 +17,7 @@ export const ActivityTypeSelector: React.FC<ActivityTypeSelectorProps> = ({ sele
       return (
         <TouchableOpacity
           key={type}
+          activeOpacity={0.75}
           style={[styles.option, isSelected ? styles.optionActive : styles.optionInactive]}
           onPress={() => onSelect(type)}
           accessibilityRole="radio"
@@ -24,10 +25,10 @@ export const ActivityTypeSelector: React.FC<ActivityTypeSelectorProps> = ({ sele
           accessibilityLabel={`${type} activity`}
         >
           <Text style={[styles.label, isSelected && styles.labelActive]}>
-            {type === 'fixed' ? 'Fixed' : 'Flexible'}
+            {type === 'fixed' ? 'Fixed Time' : 'Flexible Window'}
           </Text>
           <Text style={styles.description}>
-            {type === 'fixed' ? 'Set a specific time' : 'Schedule within a window'}
+            {type === 'fixed' ? 'Set specific time slot' : 'Auto-schedule within range'}
           </Text>
         </TouchableOpacity>
       );
@@ -36,7 +37,11 @@ export const ActivityTypeSelector: React.FC<ActivityTypeSelectorProps> = ({ sele
 );
 
 const styles = StyleSheet.create({
-  container: { flexDirection: 'row', gap: spacing.xs },
+  container: {
+    flexDirection: 'row',
+    gap: spacing.xs,
+    marginVertical: spacing.xs,
+  },
   option: {
     flex: 1,
     minHeight: 62,
@@ -45,9 +50,26 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
   },
-  optionActive: { backgroundColor: colors.primaryMuted, borderWidth: 1.5, borderColor: colors.primary },
-  optionInactive: { backgroundColor: colors.surfaceCard, ...spacing.neu.raisedSm },
-  label: { color: colors.textPrimary, fontSize: typography.sizes.md, fontWeight: typography.weights.bold },
-  labelActive: { color: colors.primary },
-  description: { color: colors.textMuted, fontSize: typography.sizes.xs, marginTop: 3 },
+  optionActive: {
+    backgroundColor: colors.primaryMuted,
+    borderWidth: 1.5,
+    borderColor: colors.primary,
+  },
+  optionInactive: {
+    backgroundColor: colors.surfaceCard,
+    ...spacing.neu.raisedSm,
+  },
+  label: {
+    color: colors.textPrimary,
+    fontSize: typography.sizes.sm,
+    fontWeight: typography.weights.bold,
+  },
+  labelActive: {
+    color: colors.primary,
+  },
+  description: {
+    color: colors.textMuted,
+    fontSize: 10,
+    marginTop: 3,
+  },
 });
