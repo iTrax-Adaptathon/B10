@@ -119,3 +119,31 @@ export const getNextSevenDays = (): { date: string; dayName: string; dayNum: num
 
   return result;
 };
+
+export const getCalendarDaysWindow = (
+  daysBack = 7,
+  daysForward = 23
+): { date: string; dayName: string; dayNum: number; monthName: string; isToday: boolean }[] => {
+  const result = [];
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+
+  for (let i = -daysBack; i <= daysForward; i++) {
+    const d = new Date(today);
+    d.setDate(today.getDate() + i);
+    const year = d.getFullYear();
+    const month = String(d.getMonth() + 1).padStart(2, '0');
+    const day = String(d.getDate()).padStart(2, '0');
+    const dateStr = `${year}-${month}-${day}`;
+
+    result.push({
+      date: dateStr,
+      dayName: d.toLocaleDateString('en-US', { weekday: 'short' }),
+      dayNum: d.getDate(),
+      monthName: d.toLocaleDateString('en-US', { month: 'short' }),
+      isToday: i === 0,
+    });
+  }
+
+  return result;
+};

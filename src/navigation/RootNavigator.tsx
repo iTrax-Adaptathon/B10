@@ -4,6 +4,7 @@ import { RootStackParamList } from '../types/navigation';
 import { BottomTabNavigator } from './BottomTabNavigator';
 import { NotificationsScreen } from '../screens/Notifications/NotificationsScreen';
 import { ActivityDetailScreen } from '../screens/ActivityDetail/ActivityDetailScreen';
+import { AddCommitmentScreen } from '../screens/AddCommitment/AddCommitmentScreen';
 import { colors } from '../theme/colors';
 import { typography } from '../theme/typography';
 
@@ -45,6 +46,14 @@ export const RootNavigator: React.FC = () => {
         component={ActivityDetailScreen}
         options={{
           title: 'Activity Details',
+          headerTitleAlign: 'center',
+        }}
+      />
+      <Stack.Screen
+        name="AddCommitment"
+        component={AddCommitmentScreen}
+        options={{
+          title: 'Add Commitment',
           headerTitleAlign: 'center',
         }}
       />
