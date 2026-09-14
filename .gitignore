@@ -27,3 +27,11 @@ Thumbs.db
 # Editor files
 .vscode/
 .idea/
+
+# Signing credentials and local conflict files
+*.jks
+*.p8
+*.p12
+*.key
+*.mobileprovision
+*.orig.*
