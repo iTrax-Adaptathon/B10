@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { View, Text, ScrollView, TouchableOpacity, RefreshControl } from 'react-native';
+import { View, Text, ScrollView, RefreshControl } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import {
   CalendarDays,
@@ -10,11 +10,8 @@ import {
 import { useActivities } from '../../context/ActivityContext';
 import { MetricCard } from './components/MetricCard';
 import { TodayActivitiesCarousel } from './components/TodayActivitiesCarousel';
-import { TodayScheduleTimeline } from './components/TodayScheduleTimeline';
 import { UpcomingActivitiesList } from './components/UpcomingActivitiesList';
-import { CategoryDistribution } from './components/CategoryDistribution';
-import { ActivityStreakGrid } from './components/ActivityStreakGrid';
-import { getNextSevenDays, getTodayDateString, formatDateDisplay } from '../../utils/dateHelpers';
+import { getTodayDateString, formatDateDisplay } from '../../utils/dateHelpers';
 import { colors } from '../../theme/colors';
 import { styles } from './styles';
 
@@ -22,10 +19,7 @@ export const DashboardScreen: React.FC = () => {
   const { activities, metrics, toggleCompleteActivity, refreshActivities } =
     useActivities();
 
-  const [selectedDate, setSelectedDate] = useState<string>(getTodayDateString());
   const [refreshing, setRefreshing] = useState<boolean>(false);
-
-  const weekDays = getNextSevenDays();
   const todayStr = getTodayDateString();
 
   const onRefresh = async () => {
@@ -36,10 +30,6 @@ export const DashboardScreen: React.FC = () => {
 
   const todayActivities = activities
     .filter((a) => a.date === todayStr)
-    .sort((a, b) => a.startTime.localeCompare(b.startTime));
-
-  const selectedDateActivities = activities
-    .filter((a) => a.date === selectedDate)
     .sort((a, b) => a.startTime.localeCompare(b.startTime));
 
   const upcomingUrgent = activities
@@ -119,50 +109,6 @@ export const DashboardScreen: React.FC = () => {
           toggleCompleteActivity={toggleCompleteActivity}
         />
 
-        {/* Schedule Timeline Header with 7-Day Selector */}
-        <View style={styles.section}>
-          <View style={styles.sectionHeader}>
-            <View style={styles.sectionTitleRow}>
-              <Text style={styles.sectionTitle}>Daily Schedule</Text>
-              <View style={styles.sectionBadge}>
-                <Text style={styles.sectionBadgeText}>{selectedDateActivities.length} items</Text>
-              </View>
-            </View>
-          </View>
-
-          {/* 7-Day Quick Selector */}
-          <ScrollView
-            horizontal
-            showsHorizontalScrollIndicator={false}
-            style={styles.weekDaysScroll}
-          >
-            {weekDays.map((day) => {
-              const isSelected = day.date === selectedDate;
-              return (
-                <TouchableOpacity
-                  key={day.date}
-                  style={[styles.dayChip, isSelected && styles.dayChipActive]}
-                  onPress={() => setSelectedDate(day.date)}
-                  activeOpacity={0.7}
-                >
-                  <Text style={[styles.dayChipName, isSelected && styles.dayChipNameActive]}>
-                    {day.dayName}
-                  </Text>
-                  <Text style={[styles.dayChipNum, isSelected && styles.dayChipNumActive]}>
-                    {day.dayNum}
-                  </Text>
-                </TouchableOpacity>
-              );
-            })}
-          </ScrollView>
-
-          {/* Timeline */}
-          <TodayScheduleTimeline
-            activities={selectedDateActivities}
-            onToggleComplete={toggleCompleteActivity}
-          />
-        </View>
-
         {/* Priority Focus Section */}
         {upcomingUrgent.length > 0 && (
           <View style={styles.section}>
@@ -175,12 +121,6 @@ export const DashboardScreen: React.FC = () => {
             <UpcomingActivitiesList activities={upcomingUrgent} />
           </View>
         )}
-
-        {/* Category Breakdown */}
-        <CategoryDistribution activities={activities} />
-
-        {/* Activity Streak Grid */}
-        <ActivityStreakGrid activities={activities} />
       </ScrollView>
     </SafeAreaView>
   );

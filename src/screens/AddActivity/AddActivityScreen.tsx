@@ -5,38 +5,39 @@ import {
   TextInput,
   ScrollView,
   TouchableOpacity,
-  Switch,
   Alert,
   KeyboardAvoidingView,
   Platform,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { useNavigation } from '@react-navigation/native';
+import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import {
-  Bell,
   Calendar,
   Clock,
   MapPin,
   PlusCircle,
   Hourglass,
   Layers,
-  PackageCheck,
+  CalendarClock,
+  ChevronRight,
 } from 'lucide-react-native';
 import { useActivities } from '../../context/ActivityContext';
 import { useCommitments } from '../../context/CommitmentContext';
 import { useNotifications } from '../../context/NotificationContext';
 import { ActivityCategory, ActivityFormData, ActivityType, PriorityLevel } from '../../types/activity';
+import { RootStackParamList } from '../../types/navigation';
 import { CategorySelector } from './components/CategorySelector';
 import { PrioritySelector } from './components/PrioritySelector';
-import { TagColorPicker } from './components/TagColorPicker';
 import { ActivityTypeSelector } from './components/ActivityTypeSelector';
 import { DependencySelector } from './components/DependencySelector';
-import { ResourceInput } from './components/ResourceInput';
 import { validateActivity } from '../../utils/activityValidation';
 import { getTodayDateString } from '../../utils/dateHelpers';
 import { colors } from '../../theme/colors';
 import { styles } from './styles';
 
 export const AddActivityScreen: React.FC = () => {
+  const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
   const { activities, addActivity } = useActivities();
   const { commitments } = useCommitments();
   const { addNotification } = useNotifications();
@@ -52,16 +53,8 @@ export const AddActivityScreen: React.FC = () => {
   const [endTime, setEndTime] = useState<string>('10:00');
   const [durationMinutes, setDurationMinutes] = useState<string>('60');
   const [dependencies, setDependencies] = useState<string[]>([]);
-  const [resources, setResources] = useState<string[]>([]);
-  const [tagColor, setTagColor] = useState<string>(colors.categories.work);
-  const [hasReminder, setHasReminder] = useState<boolean>(true);
   const [location, setLocation] = useState<string>('');
   const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
-
-  const handleCategoryChange = (newCat: ActivityCategory) => {
-    setCategory(newCat);
-    setTagColor(colors.categories[newCat] || colors.primary);
-  };
 
   const handleSubmit = async () => {
     if (!title.trim()) {
@@ -72,6 +65,8 @@ export const AddActivityScreen: React.FC = () => {
     const calculatedDuration = activityType === 'flexible'
       ? parseInt(durationMinutes, 10) || 60
       : undefined;
+
+    const assignedTagColor = colors.categories[category] || colors.primary;
 
     // Run constraint and overlap validation against existing activities and commitments
     const candidateActivity = {
@@ -89,9 +84,8 @@ export const AddActivityScreen: React.FC = () => {
       fixedStartTime: activityType === 'fixed' ? startTime : undefined,
       fixedEndTime: activityType === 'fixed' ? endTime : undefined,
       dependencies,
-      resources,
-      tagColor,
-      hasReminder,
+      tagColor: assignedTagColor,
+      hasReminder: true,
       createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString(),
     };
@@ -119,25 +113,22 @@ export const AddActivityScreen: React.FC = () => {
         fixedStartTime: activityType === 'fixed' ? startTime : undefined,
         fixedEndTime: activityType === 'fixed' ? endTime : undefined,
         dependencies: dependencies.length > 0 ? dependencies : undefined,
-        resources: resources.length > 0 ? resources : undefined,
-        tagColor,
-        hasReminder,
-        reminderMinutesBefore: hasReminder ? 15 : undefined,
+        tagColor: assignedTagColor,
+        hasReminder: true,
+        reminderMinutesBefore: 15,
         location: location.trim() || undefined,
       };
 
       const newActivity = await addActivity(formData);
 
-      // Trigger automatic reminder notification if enabled
-      if (hasReminder) {
-        await addNotification({
-          title: `Scheduled: ${newActivity.title}`,
-          message: `Scheduled for ${newActivity.date} at ${newActivity.startTime}. Priority: ${newActivity.priority.toUpperCase()}`,
-          type: 'reminder',
-          activityId: newActivity.id,
-          priority: newActivity.priority === 'urgent' ? 'high' : 'normal',
-        });
-      }
+      // Trigger reminder notification
+      await addNotification({
+        title: `Scheduled: ${newActivity.title}`,
+        message: `Scheduled for ${newActivity.date} at ${newActivity.startTime}. Priority: ${newActivity.priority.toUpperCase()}`,
+        type: 'reminder',
+        activityId: newActivity.id,
+        priority: newActivity.priority === 'urgent' ? 'high' : 'normal',
+      });
 
       // Reset form
       setTitle('');
@@ -147,8 +138,6 @@ export const AddActivityScreen: React.FC = () => {
       setPriority('medium');
       setActivityType('fixed');
       setDependencies([]);
-      setResources([]);
-      setTagColor(colors.categories.work);
 
       Alert.alert('Success 🎉', 'Activity scheduled in PlanWise successfully!', [
         { text: 'Great!', style: 'default' },
@@ -176,6 +165,26 @@ export const AddActivityScreen: React.FC = () => {
             <Text style={styles.headerTitle}>New Activity</Text>
             <Text style={styles.headerSubtitle}>Plan and organize your tasks seamlessly</Text>
           </View>
+
+          {/* Add / Manage Commitments Shortcut Banner */}
+          <TouchableOpacity
+            activeOpacity={0.8}
+            style={styles.commitmentBanner}
+            onPress={() => navigation.navigate('AddCommitment')}
+          >
+            <View style={styles.commitmentBannerLeft}>
+              <View style={styles.commitmentIconBox}>
+                <CalendarClock size={20} color={colors.primary} />
+              </View>
+              <View>
+                <Text style={styles.commitmentBannerTitle}>Add / Manage Commitments</Text>
+                <Text style={styles.commitmentBannerSubtitle}>
+                  Set recurring classes, work hours, or gym blocks
+                </Text>
+              </View>
+            </View>
+            <ChevronRight size={18} color={colors.textMuted} />
+          </TouchableOpacity>
 
           {/* Activity Title */}
           <View style={styles.formGroup}>
@@ -215,7 +224,7 @@ export const AddActivityScreen: React.FC = () => {
           {/* Category */}
           <View style={styles.formGroup}>
             <Text style={styles.label}>Category</Text>
-            <CategorySelector selected={category} onSelect={handleCategoryChange} />
+            <CategorySelector selected={category} onSelect={setCategory} />
           </View>
 
           {/* Priority */}
@@ -314,43 +323,6 @@ export const AddActivityScreen: React.FC = () => {
               selectedIds={dependencies}
               onChange={setDependencies}
             />
-          </View>
-
-          {/* Required Resources Input */}
-          <View style={styles.formGroup}>
-            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, marginBottom: 4 }}>
-              <PackageCheck size={15} color={colors.secondary} />
-              <Text style={styles.label}>Required Resources & Tools</Text>
-            </View>
-            <ResourceInput
-              resources={resources}
-              onChange={setResources}
-            />
-          </View>
-
-          {/* Tag Color Customization */}
-          <View style={styles.formGroup}>
-            <Text style={styles.label}>Tag Color</Text>
-            <TagColorPicker selectedColor={tagColor} onSelectColor={setTagColor} />
-          </View>
-
-          {/* Reminder Switch */}
-          <View style={styles.formGroup}>
-            <View style={styles.switchRow}>
-              <View style={styles.switchLeft}>
-                <Bell size={20} color={hasReminder ? colors.secondary : colors.textMuted} />
-                <View>
-                  <Text style={styles.switchTitle}>Set Notification Reminder</Text>
-                  <Text style={styles.switchSubtitle}>Alert 15 mins before start time</Text>
-                </View>
-              </View>
-              <Switch
-                value={hasReminder}
-                onValueChange={setHasReminder}
-                trackColor={{ false: colors.surfaceInset, true: colors.primary }}
-                thumbColor="#FFFFFF"
-              />
-            </View>
           </View>
 
           {/* Submit Button */}
