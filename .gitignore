@@ -1,37 +1,17 @@
-# Dependencies
 node_modules/
 
 # Expo
 .expo/
-.expo-shared/
-
-# Build output
-web-build/
 dist/
-
-# Environment files
-.env
-.env.*
-!.env.example
-
-# Logs
-npm-debug.log*
-yarn-debug.log*
-yarn-error.log*
-pnpm-debug.log*
-
-# OS files
-.DS_Store
-Thumbs.db
-
-# Editor files
-.vscode/
-.idea/
-
-# Signing credentials and local conflict files
+npm-debug.*
 *.jks
 *.p8
 *.p12
 *.key
 *.mobileprovision
 *.orig.*
+.DS_Store
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
